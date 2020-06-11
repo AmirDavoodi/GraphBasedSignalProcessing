@@ -22,5 +22,6 @@ In the model, we do the following steps from a pure signal to a labeled signal w
 
 
 The database that I used is downloaded from the following kaggle link which is just the csv version of the original physionet dataset.
-my downloaded dataset: https://www.kaggle.com/mondejar/mitbih-database
-Original physionet dataset: https://www.physionet.org/content/mitdb/1.0.0/
+
+- my downloaded dataset: https://www.kaggle.com/mondejar/mitbih-database
+- Original physionet dataset: https://www.physionet.org/content/mitdb/1.0.0/
