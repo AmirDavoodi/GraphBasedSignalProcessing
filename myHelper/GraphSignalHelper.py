@@ -212,7 +212,8 @@ def find_best_ma_perc_shift(original_ecg, mov_avg, fs):
     '''
     #List with moving average raise percentages, make
     # as detailed as you like but keep an eye on speed
-    ma_perc_list = [5, 10, 15, 20, 25, 30]
+#     ma_perc_list = [5, 10, 15, 20, 25, 30]
+    ma_perc_list = [*range(1, 30, 1)] 
     rrsd_list = []
     valid_ma = []
 
@@ -220,7 +221,7 @@ def find_best_ma_perc_shift(original_ecg, mov_avg, fs):
     for ma_perc in ma_perc_list:
         (peaklist, ybeat) = detect_peaks(original_ecg, mov_avg, ma_perc)
         peak_bpm = ((len(peaklist)/(len(original_ecg)/fs))*60)
-        RR_list = measure_rr(peaklist)
+        RR_list = measure_rr(peaklist, fs)
         rrsd = measure_rrsd(RR_list)
         rrsd_list.append([rrsd, peak_bpm, ma_perc])
 
@@ -236,7 +237,7 @@ def find_best_ma_perc_shift(original_ecg, mov_avg, fs):
     rrsd_best = min(valid_ma, key = lambda t: t[0])[0]
     return ma_perc_best
 
-def hb_split(original_ecg, peaklist, annotations_df):
+def hb_split(original_ecg_sample_n, peaklist, annotations_df):
     '''
     Split the ECG signal [original_ecg] into its heart beats using
     the index of the R-peaks [peaklist]
@@ -250,20 +251,20 @@ def hb_split(original_ecg, peaklist, annotations_df):
     :return heart_beats: the origianl signal for each heartbeat
     :ruturn hbs_annotations: annotations for each heartbeat
     '''
-    heart_beats = [original_ecg[i : j] for i, j in zip([0] + peaklist, peaklist + [None])]
+    btw_R_peaks = [int((i+j)/2) for i, j in zip(peaklist[:-1], peaklist[1:])]
+    heart_beats = [original_ecg_sample_n[i : j] for i, j in zip([0] + btw_R_peaks, btw_R_peaks + [None])]
     heart_beats = heart_beats[1:-1]
-
+    
     hbs_annotations = []
     for hb in heart_beats:
         # get the maximum and minimum of the sample numbers of each heart beat
-        max_sample_number = hb.index.max()
-        min_sample_number = hb.index.min()
+        max_sample_number = hb[hb.columns[0]].max()
+        min_sample_number = hb[hb.columns[0]].min()
 
         # sort to get only annotations for the sample numbers in range
         sorted_annotations_df = annotations_df.loc[(annotations_df['Sample'] <= max_sample_number)
                                                    & (annotations_df['Sample'] >= min_sample_number)]
         hbs_annotations.append(sorted_annotations_df)
-
     return heart_beats, hbs_annotations
 
 def nvg(series, timeLine):
@@ -347,6 +348,33 @@ def hvg(series, timeLine):
 
     return all_visible
 
+def downsample(data_df, annotations_df, downstep=2):
+    '''
+    Downsample ECG dataframe(data_df) and its annotations(annotations_df)
+    --------------------------------------------------------------------------
+    :param data_df: ECG(EKG) data from the dataset
+    :param annotations_df: annotations for the ECG data
+    
+    :return downsp_data_df: downsampled dataframe for recorded ECG
+    :return downsp_annotations_df: downsampled annotations for the ECG data
+    '''
+    # downsampling the ecg signal (drop one in a row)
+    downsp_data_df = data_df.iloc[::downstep]
+    downsp_annotations_df = annotations_df.copy()
+    
+    
+    # find the annotations which their samples have been deleted in downsampling process
+    deleted_samples = ~downsp_annotations_df['Sample'].isin(downsp_data_df.iloc[:,0])
+    
+    # replace the deleted sample values of annotation with the previous existing sample value
+    downsp_annotations_df.loc[deleted_samples, 'Sample'] = downsp_annotations_df.loc[deleted_samples, 'Sample'] - \
+                                      (downsp_annotations_df.loc[deleted_samples, 'Sample'] % downstep)
+    
+    #reset the indexing after droping some rows of the dataframe
+    downsp_data_df.index = range(len(downsp_data_df.index))
+    
+    return downsp_data_df, downsp_annotations_df
+
 def generate_graph_stream(data_df, annotations_df, fs = 360):
     '''
     Function to generate the graph stream and label for each graph.
@@ -360,14 +388,15 @@ def generate_graph_stream(data_df, annotations_df, fs = 360):
     :return graph_stream_labels: array of labels coresponding to each
                                  graph in the stream.
     '''
-
     original_ecg = data_df[data_df.columns[1]]
-    mov_avg = movingaverage(original_ecg, hrw=0.75)
+    original_ecg_sample_n = data_df.iloc[:, 0:2]
+#     original_ecg_sample_n = data_df[data_df.columns[0]]
+    mov_avg = movingaverage(original_ecg, fs=fs)
 
     # test some possible ma_perc_shift for selecting the
     # best from by looking at RRSD and BPM
-    # ma_perc_best = find_best_ma_perc_shift(original_ecg, mov_avg, fs)
-    # print("ma_perc_best = ", ma_perc_best)
+#     ma_perc_best = find_best_ma_perc_shift(original_ecg, mov_avg, fs)
+#     print("ma_perc_best = ", ma_perc_best)
     ma_perc_best = 5
 
     #Detect peaks with 'ma_perc_best'
@@ -375,14 +404,14 @@ def generate_graph_stream(data_df, annotations_df, fs = 360):
                                      mov_avg,
                                      ma_perc = ma_perc_best)
 
-    (heart_beats, hbs_annotations) = hb_split(original_ecg,
+    (heart_beats, hbs_annotations) = hb_split(original_ecg_sample_n,
                                               peaklist,
                                               annotations_df)
 
     hbs_vg = {}
     # hbs_hvg = {}
     for hb_num, hb in enumerate(heart_beats):
-        series = hb.tolist()
+        series = hb[hb.columns[1]].tolist()
         time_samples = range(len(series))
         # time_samples = hb.index.values.tolist()
         nvg_array = nvg(series, time_samples)
