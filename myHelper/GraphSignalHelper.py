@@ -375,6 +375,37 @@ def downsample(data_df, annotations_df, downstep=2):
     
     return downsp_data_df, downsp_annotations_df
 
+def ground_truth_labels(graph_stream_labels):
+    '''
+    Assign the true labels based on the annotations in our database
+    1 = Normal heartbeat
+    -1 = Anomalous heartbeat
+    
+    --------------------------------------------------------------------------
+
+    :param graph_stream_labels: a list of dataframes which can contain zero to 
+    two rows for each heartbeat annotation.
+    
+    :return true_labels: list containing the true labels of (1) or (-1)
+    '''
+    true_labels = []
+    for graph_index, graph_annotation in enumerate(graph_stream_labels):
+        graph_label = 99999
+        if(len(graph_annotation.index) == 1):
+            if(graph_annotation.iloc[0]['Type'] == "N"):
+                true_labels.append(1)
+            else:
+                true_labels.append(-1)
+        elif (len(graph_annotation.index) == 2):
+            if((graph_annotation.iloc[0]['Type'] == "N") and (graph_annotation.iloc[1]['Type'] == "N")):
+                true_labels.append(1)
+            else:
+                true_labels.append(-1)
+        elif (len(graph_annotation.index) == 0):
+            true_labels.append(-1)
+        
+    return np.array(true_labels)
+
 def generate_graph_stream(data_df, annotations_df, fs = 360):
     '''
     Function to generate the graph stream and label for each graph.
@@ -428,5 +459,5 @@ def generate_graph_stream(data_df, annotations_df, fs = 360):
         #     hbs_hvg[hb_num].add_edges_from(edges)
 
     graph_stream = hbs_vg
-    graph_stream_labels = hbs_annotations
+    graph_stream_labels = ground_truth_labels(hbs_annotations)
     return graph_stream, graph_stream_labels
