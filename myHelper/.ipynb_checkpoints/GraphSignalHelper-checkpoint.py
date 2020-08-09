@@ -453,7 +453,7 @@ def my_single_ma_R_detector(original_ecg, fs):
                                      ma_perc = ma_perc_best)
     return peaklist, ybeat
 
-def heartbeat_spliting(data_df, annotations_df, R_detector='my', fs = 360):
+def heartbeat_spliting(data_df, annotations_df, R_detector='my_moving_avergage', fs = 360):
     '''
     Split the signal and its labels into heartbeats
     --------------------------------------------------------------------------
