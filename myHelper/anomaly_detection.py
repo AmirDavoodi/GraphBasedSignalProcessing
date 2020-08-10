@@ -23,8 +23,8 @@ def ged_novelty_detection_cv(graph_stream,
 
     f1sc = make_scorer(f1_score)
 
-    ps = {"contamination": np.linspace(0.000001, 0.25, 10),
-          "n_neighbors": np.linspace(4, 10, 4, dtype = int)}
+    ps = {"contamination": np.linspace(0.000001, 0.25, 3),
+          "n_neighbors": np.linspace(4, 200, 3, dtype = int)}
     lof = LocalOutlierFactor(algorithm="brute",
                              metric=my_ged.ged_distance,
                              metric_params={"graph_stream": graph_stream},
@@ -184,23 +184,21 @@ def anomaly_plotter(y_true, y_pred):
                                                          title        = "Confusion Matrix")
     
     
-def k_neigh_plotter(distance_matrix,
-                    graph_stream_labels
-                    X):
-    minRE = 2
-    maxRE = 100
+def k_neigh_plotter(distance_matrix, graph_stream_labels, n_process= None):
+    min_NN = 2
+    max_NN = 20
 
     EpsF1 = []
     y_true = graph_stream_labels
 
-    for TryRE in range(minRE,maxRE,1):
-        clf = LocalOutlierFactor(n_neighbors=TryRE,
+    for try_NN in  np.linspace(4, 200, 20, dtype = int):
+        clf = LocalOutlierFactor(n_neighbors=try_NN,
                                  algorithm="brute",
                                  metric="precomputed",
                                  contamination='auto', # the proportion of outliers in the data set float 
                                  novelty=False, # novelty=True if you want to use LOF for novelty 
                                                 # detection and predict on new unseen data
-                                 n_jobs=None)
+                                 n_jobs=n_process)
 
         y_pred = clf.fit_predict(X=distance_matrix)
         n_errors = (y_pred != y_true).sum()
@@ -211,11 +209,11 @@ def k_neigh_plotter(distance_matrix,
         precision,recall,fbeta_score, support  = precision_recall_fscore_support(y_true, y_pred, average='binary')
 
     #     print("F1 score on test", round(fbeta_score,4), " with num neighbors ", TryRE)
-        EpsF1.append([TryRE, round(fbeta_score,4)])
+        EpsF1.append([try_NN, round(fbeta_score,4)])
 
     EpsF1df = pd.DataFrame(EpsF1, columns = ['NumNeighb', 'F1'])
 
     EpsF1df.plot.line("NumNeighb","F1")
-    plt.xlim(2, 40)
+    plt.xlim(min_NN, max_NN-1)
     plt.title("F1 vs NumNeighb")
     plt.show()

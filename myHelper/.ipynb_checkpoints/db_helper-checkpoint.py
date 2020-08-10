@@ -24,7 +24,6 @@ def get_patients_id(DB_dir):
     :return patients_num: a list containing the patients numbers
     '''
     path = DB_dir+'*'
-    
     patients_num = []
     for file in glob.glob(path):
         file_name = get_file_name(file, DB_dir)
