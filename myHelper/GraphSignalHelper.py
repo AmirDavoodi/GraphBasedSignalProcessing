@@ -12,9 +12,9 @@ import math
 import networkx as nx
 from ecgdetectors import Detectors
 
-old_settings = np.seterr('raise')
-import warnings
-warnings.filterwarnings('ignore')
+# old_settings = np.seterr('raise')
+# import warnings
+# warnings.filterwarnings('ignore')
 
 def movingaverage(original_ecg, hrw=0.75, fs = 360):
     '''
@@ -209,6 +209,37 @@ def find_best_ma_perc_shift(original_ecg, mov_avg, fs):
     ma_perc_best = min(valid_ma, key = lambda t: t[0])[1]
     rrsd_best = min(valid_ma, key = lambda t: t[0])[0]
     return ma_perc_best
+
+def fixed_hb_split(original_ecg_sample_n, peaklist, annotations_df):
+    '''
+    Split the ECG signal [original_ecg] into its fixed heart beats using
+    the index of the R-peaks [peaklist]
+    --------------------------------------------------------------------------
+
+    :param original_ecg: recorded ECG signal
+    :param peaklist: positions of the point where R-peak detected on
+                     the X-axis of the signal
+    :param annotations_df: annotations for the ECG data
+
+    :return heart_beats: the origianl signal for each heartbeat
+    :ruturn hbs_annotations: annotations for each heartbeat
+    '''
+    fix = np.mean([(j-i) for i, j in zip(peaklist[:-1], peaklist[1:])]).astype(int)
+    fix_half = int(fix/2)
+    heart_beats = [original_ecg_sample_n[i-fix_half:i+fix_half] for i in peaklist]
+    heart_beats = heart_beats[1:-1]
+    
+    hbs_annotations = []
+    for hb in heart_beats:
+        # get the maximum and minimum of the sample numbers of each heart beat
+        max_sample_number = hb[hb.columns[0]].max()
+        min_sample_number = hb[hb.columns[0]].min()
+
+        # sort to get only annotations for the sample numbers in range
+        sorted_annotations_df = annotations_df.loc[(annotations_df['Sample'] <= max_sample_number)
+                                                   & (annotations_df['Sample'] >= min_sample_number)]
+        hbs_annotations.append(sorted_annotations_df)
+    return heart_beats, hbs_annotations
 
 def hb_split(original_ecg_sample_n, peaklist, annotations_df):
     '''
@@ -484,5 +515,43 @@ def heartbeat_spliting(data_df, annotations_df, R_detector='my', fs = 360):
     (heart_beats, hbs_annotations) = hb_split(original_ecg_sample_n,
                                               peaklist,
                                               annotations_df)
+    hb_con_annot = hb_concated_anno(hbs_annotations)
+    return heart_beats, hb_con_annot
+
+def fixed_heartbeat_spliting(data_df, annotations_df, R_detector='my', fs = 360):
+    '''
+    Split the signal and its labels into fixed size heartbeats
+    --------------------------------------------------------------------------
+    :param data_df: ECG(EKG) data from the dataset
+    :param annotations_df: annotations for the ECG data
+    :param fs: frequency in which the data is recorded
+               for our MIT-BIH the frequency is 360 Hz
+    
+    :return heart_beats: the origianl signal for each heartbeat
+    :ruturn hb_labels: annotations for each heartbeat
+    '''
+    original_ecg = data_df[data_df.columns[1]]
+    original_ecg_sample_n = data_df.iloc[:, 0:2]
+    
+    if(R_detector == 'my'):
+        (peaklist, ybeat) = my_single_ma_R_detector(original_ecg, fs=fs)
+    elif(R_detector == 'tompkins'):
+        detectors = Detectors(fs)
+        peaklist = detectors.swt_detector(original_ecg)
+    elif(R_detector == 'wavelet'):
+        detectors = Detectors(fs)
+        peaklist = detectors.pan_tompkins_detector(original_ecg)
+    elif(R_detector == 'two_aver'):
+        detectors = Detectors(fs)
+        peaklist = detectors.two_average_detector(original_ecg)
+        
+
+#     (heart_beats, hbs_annotations) = hb_split(original_ecg_sample_n,
+#                                               peaklist,
+#                                               annotations_df)
+    (heart_beats, hbs_annotations) = fixed_hb_split(original_ecg_sample_n,
+                                                    peaklist,
+                                                    annotations_df)
+
     hb_con_annot = hb_concated_anno(hbs_annotations)
     return heart_beats, hb_con_annot
