@@ -135,13 +135,13 @@ def ged_nov_det_cv_dis_mat(ged_dis_mat,
 #     fbet = make_scorer(fbeta_score, average='binary', beta=0.2)
     facur=make_scorer(accuracy_score)
 
-#     ps = {"contamination": np.linspace(0.000001, 0.5, 20, endpoint=False),
-#           "n_neighbors": np.linspace(4, 200, 10, dtype = int)}
-    ps = {"n_neighbors": np.linspace(4, 200, 50, dtype = int)}
+    ps = {"contamination": np.linspace(0.000001, 0.5, 20, endpoint=False),
+          "n_neighbors": np.linspace(4, 200, 10, dtype = int)}
+#     ps = {"n_neighbors": np.linspace(4, 200, 50, dtype = int)}
     
     lof = LocalOutlierFactor(algorithm="brute",
                              metric="precomputed",
-                             contamination=0.05,
+#                              contamination=0.05,
                              novelty=True,
                              n_jobs=n_process)
 
@@ -264,13 +264,15 @@ def ged_out_det_dis_mat(ged_dis_mat,
     # The higher the more normal.
     y_scores = (lof.negative_outlier_factor_)
 #     print("\n Outlier scores for train data (1 = normal, 1 >> abnormal)= \n", y_scores)
+    print("\n Outlier threshold -(clf.offset_) = ", -(lof.offset_), "\n\n")
     
     return y_pred, y_scores
 
 @timing.time_it
 def vec_out_det_dis_mat(vec_dis_mat,
                         n_process= -1,
-                        n_neighbors=200):
+                        n_neighbors=200,
+                        contamination=0.2):
     '''
     --------------------------------------------------------------------------------------------
     --------------------------------------------------------------------------------------------
@@ -279,7 +281,7 @@ def vec_out_det_dis_mat(vec_dis_mat,
     lof = LocalOutlierFactor(algorithm="brute",
                              metric="precomputed",
                              n_neighbors=n_neighbors,
-                             contamination=0.2,
+                             contamination=contamination,
                              novelty=False,
                              n_jobs=n_process)
     y_pred = lof.fit_predict(X=vec_dis_mat)
@@ -292,6 +294,40 @@ def vec_out_det_dis_mat(vec_dis_mat,
 #     print("\n Outlier scores for train data (1 = normal, 1 >> abnormal)= \n", y_scores)
     
     return y_pred, y_scores
+
+def combine_OD_dis(vec_dis_mat,
+                   ged_dis_mat,
+                   n_process= -1,
+                   vec_n_neighbors=200,
+                   vec_c =0.2,
+                   ged_n_neighbors=4,
+                   ged_c=0.03):
+    vec_lof = LocalOutlierFactor(algorithm="brute",
+                             metric="precomputed",
+                             n_neighbors=vec_n_neighbors,
+                             contamination=vec_c,
+                             novelty=False,
+                             n_jobs=n_process)
+    vec_y_pred = vec_lof.fit_predict(X=vec_dis_mat)
+    vec_y_scores = (vec_lof.negative_outlier_factor_)
+    vec_threshold = vec_lof.offset_
+    
+    ged_lof = LocalOutlierFactor(algorithm="brute",
+                             metric="precomputed",
+                             n_neighbors=ged_n_neighbors,
+                             contamination=ged_c,
+                             novelty=False,
+                             n_jobs=n_process)
+    ged_y_pred = ged_lof.fit_predict(X=ged_dis_mat)
+    ged_y_scores = (ged_lof.negative_outlier_factor_)
+    ged_threshold = ged_lof.offset_
+    
+    return vec_y_pred, vec_y_scores, vec_threshold, ged_y_pred, ged_y_scores, ged_threshold
+    
+    
+    
+    
+    
 
 @timing.time_it
 def ged_outlier_detection(graph_stream,

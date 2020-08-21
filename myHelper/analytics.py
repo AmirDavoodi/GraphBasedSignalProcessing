@@ -222,18 +222,18 @@ def sig_pre_recall(vec_dis_mat,
     # plot the LOOP model precision-recall curve
     fig.add_trace(go.Scatter(x=sig_LOF_recall, y=sig_LOF_precision,
                         mode='lines+markers',
-                        name='Signiture Avg {0:0.4f}'.format(sig_LOF_average_precision)))
+                        name='Graph-Based Avg Precision {0:0.4f}'.format(sig_LOF_average_precision)))
     
     # plot the LOF model precision-recall curve
     fig.add_trace(go.Scatter(x=vec_LOF_recall, y=vec_LOF_precision,
                         mode='lines+markers',
-                        name='Vec LOF Avg {0:0.4f}'.format(vec_LOF_average_precision)))
+                        name='Event-Based Avg Precision {0:0.4f}'.format(vec_LOF_average_precision)))
     # plot the no skill precision-recall curve
     fig.add_trace(go.Scatter(x=[0, 1], y=[no_skill, no_skill],
                         name='No Skill', line = dict(color='green', width=4, dash='dash')))
     
     fig.update_layout(
-        title="Precision-Recall Curve",
+        title="Graph-Based vs Event-Based Precision-Recall Curve",
         xaxis_title="Recall",
         yaxis_title="Precision",
         legend_title="Implementations",
@@ -449,18 +449,18 @@ def sig_roc_curve(vec_dis_mat,
     # plot roc curve for LoOP model 
     fig.add_trace(go.Scatter(x=sig_LOF_fpr, y=sig_LOF_tpr,
                         mode='lines+markers',
-                        name='Signature Avg ROC-AUC score {0:0.3f}'.format(sig_LOF_roc_auc)))
+                        name='Graph-based ROC-AUC score {0:0.3f}'.format(sig_LOF_roc_auc)))
     
     # plot roc curve for LOF model 
     fig.add_trace(go.Scatter(x=vec_LOF_fpr, y=vec_LOF_tpr,
                         mode='lines+markers',
-                        name='LOF Avg ROC-AUC score {0:0.3f}'.format(vec_LOF_roc_auc)))
+                        name='Event-based ROC-AUC score {0:0.3f}'.format(vec_LOF_roc_auc)))
     
     fig.add_trace(go.Scatter(x=[0, 1], y=[0, 1],
                         name='No Skill', line = dict(color='green', width=4, dash='dash')))
     
     fig.update_layout(
-        title="Precision-Recall Curve",
+        title="ROC-Curve",
         xaxis_title="False Positive Rate",
         yaxis_title="True Positive Rate",
         legend_title="Implementations",

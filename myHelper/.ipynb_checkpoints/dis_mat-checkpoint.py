@@ -26,6 +26,23 @@ def cal_vec_dist_mat(heart_beats, metric='euclidean'):
     return vec_dis_mat
 
 @timing.time_it
+def cal_sig_dist_mat(signatures, metric='euclidean'):
+    '''
+    Compute the distance matrix between signature vector of graph stream
+    ------------------------------------------------------------------
+    :param heart_beats: list of heartbeat dataframe. Notice each dataframe containing
+                        two columns one for sample and other for the value of the 
+                        signal.
+    :param metric: the euclidean metric is the only measurement criteria for now.
+    
+    :return vec_dis_mat: a metrix with the shape of (N*N) which N = Heartbeat numbers
+    '''
+
+    sig_dis_mat = euclidean_distances(signatures, signatures)
+    
+    return sig_dis_mat
+
+@timing.time_it
 def cal_ged_dist_mat(graph_stream):
     # convert from dictionary of graphs to list of graphs
     graph_stream_list = [v for k, v in graph_stream.items()] 

@@ -271,7 +271,8 @@ def ged_out_det_dis_mat(ged_dis_mat,
 @timing.time_it
 def vec_out_det_dis_mat(vec_dis_mat,
                         n_process= -1,
-                        n_neighbors=200):
+                        n_neighbors=200,
+                        contamination=0.2):
     '''
     --------------------------------------------------------------------------------------------
     --------------------------------------------------------------------------------------------
@@ -280,7 +281,7 @@ def vec_out_det_dis_mat(vec_dis_mat,
     lof = LocalOutlierFactor(algorithm="brute",
                              metric="precomputed",
                              n_neighbors=n_neighbors,
-                             contamination=0.2,
+                             contamination=contamination,
                              novelty=False,
                              n_jobs=n_process)
     y_pred = lof.fit_predict(X=vec_dis_mat)
