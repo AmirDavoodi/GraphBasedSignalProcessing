@@ -7,6 +7,7 @@ from sklearn.metrics import roc_curve
 from PyNomaly import loop
 from myHelper import my_ged
 import plotly.graph_objects as go
+import os
 
 def my_pre_recall(ged_dis_mat,
                   graph_stream_labels,
@@ -172,6 +173,7 @@ def sig_pre_recall(vec_dis_mat,
                    sig_dis_mat,
                    hb_labels,
                    y_zero_one,
+                   p_id,
                    vec_n_neighbors=200,
                    vec_c =0.2,
                    sig_n_neighbors=4,
@@ -238,8 +240,12 @@ def sig_pre_recall(vec_dis_mat,
         yaxis_title="Precision",
         legend_title="Implementations",
     )
-
-    fig.show() 
+    
+    #fig.show()
+    if not os.path.exists("PR_images"):
+        os.mkdir("PR_images")
+    fig.to_image(format="png", width=300, height=300, scale=2)
+    fig.write_image("PR_images/PR_curve_"+str(p_id)+".png")
     
 def my_roc_curve(ged_dis_mat,
                  graph_stream_labels,
@@ -400,6 +406,7 @@ def sig_roc_curve(vec_dis_mat,
                   sig_dis_mat,
                   hb_labels,
                   y_zero_one,
+                  p_id,
                   vec_n_neighbors=200,
                   vec_c =0.2,
                   sig_n_neighbors=4,
@@ -418,8 +425,13 @@ def sig_roc_curve(vec_dis_mat,
     sig_normalized = (sig_local_out_factors-min(sig_local_out_factors))/(max(sig_local_out_factors)- \
                                                              min(sig_local_out_factors))
 
-    # calculate roc auc
-    sig_LOF_roc_auc = roc_auc_score(y_zero_one, sig_normalized)
+   
+    try:
+        # calculate roc auc
+        sig_LOF_roc_auc = roc_auc_score(y_zero_one, sig_normalized)
+    except ValueError:
+        sig_LOF_roc_auc = 0.001
+    
     # calculate roc curve for model
     sig_LOF_fpr, sig_LOF_tpr, _ = roc_curve(y_zero_one, sig_normalized)
     
@@ -436,9 +448,13 @@ def sig_roc_curve(vec_dis_mat,
     vec_lof_threshold = -vec_lof.offset_
     vec_normalized = (vec_local_out_factors-min(vec_local_out_factors))/(max(vec_local_out_factors)- \
                                                              min(vec_local_out_factors))
-
-    # calculate roc auc
-    vec_LOF_roc_auc = roc_auc_score(y_zero_one, vec_normalized)
+    
+    try:
+        # calculate roc auc
+        vec_LOF_roc_auc = roc_auc_score(y_zero_one, vec_normalized)
+    except ValueError:
+        vec_LOF_roc_auc = 0.001
+    
     # calculate roc curve for model
     vec_LOF_fpr, vec_LOF_tpr, _ = roc_curve(y_zero_one, vec_normalized)
 
@@ -466,4 +482,8 @@ def sig_roc_curve(vec_dis_mat,
         legend_title="Implementations",
     )
 
-    fig.show()
+    # fig.show()
+    if not os.path.exists("ROC_images"):
+        os.mkdir("ROC_images")
+    fig.to_image(format="png", width=300, height=300, scale=2)
+    fig.write_image("ROC_images/ROC_curve_"+str(p_id)+".png")

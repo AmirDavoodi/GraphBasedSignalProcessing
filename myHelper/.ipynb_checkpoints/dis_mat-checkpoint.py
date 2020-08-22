@@ -5,7 +5,6 @@ import networkx as nx
 # import the GED using the munkres algorithm
 import gmatch4py as gm
 
-@timing.time_it
 def cal_vec_dist_mat(heart_beats, metric='euclidean'):
     '''
     Compute the distance matrix between vector of heartbeats
@@ -25,7 +24,6 @@ def cal_vec_dist_mat(heart_beats, metric='euclidean'):
     
     return vec_dis_mat
 
-@timing.time_it
 def cal_sig_dist_mat(signatures, metric='euclidean'):
     '''
     Compute the distance matrix between signature vector of graph stream
