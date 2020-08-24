@@ -487,3 +487,5 @@ def sig_roc_curve(vec_dis_mat,
         os.mkdir("ROC_images")
     fig.to_image(format="png", width=300, height=300, scale=2)
     fig.write_image("ROC_images/ROC_curve_"+str(p_id)+".png")
+    
+    return vec_LOF_roc_auc, sig_LOF_roc_auc
